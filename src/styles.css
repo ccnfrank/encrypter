@@ -1123,3 +1123,408 @@ dialog[open] {
   outline: 2px solid var(--brass);
   outline-offset: 2px;
 }
+
+/* ==========================================================================
+   Flip: drop area <-> protected files
+   ========================================================================== */
+.flip-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  perspective: 1600px;
+}
+
+.flip {
+  flex: 1;
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 0.8s var(--ease);
+}
+
+.flip.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.flip-face {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.flip-back {
+  transform: rotateY(180deg);
+}
+
+.flip-front > .drop {
+  flex: 1;
+}
+
+.flip-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: rgba(14, 24, 41, 0.72);
+  color: var(--paper);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition:
+    border-color 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+
+.flip-btn:hover {
+  border-color: var(--brass);
+  color: var(--brass-hi);
+}
+
+.flip-btn:focus-visible {
+  outline: 2px solid var(--brass-hi);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip {
+    transition: none;
+  }
+}
+
+/* Back side: the list */
+.vault {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 64px 22px 22px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--line-strong);
+  background:
+    radial-gradient(60% 46% at 50% 36%, rgba(217, 164, 65, 0.1), transparent 72%),
+    linear-gradient(180deg, var(--ink-800), var(--ink-900));
+  min-height: 390px;
+}
+
+.vault-head {
+  display: grid;
+  gap: 6px;
+}
+
+.vault-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.vault-empty {
+  margin: 0;
+  color: var(--paper-3);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.vault-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px 0 0;
+  display: grid;
+  gap: 8px;
+  /* 10 rows (46px each, 6px gaps) are visible; more rows scroll */
+  max-height: calc(10 * 46px + 9 * 6px);
+  overflow-y: auto;
+}
+
+.vault-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line-strong);
+  background: rgba(10, 18, 32, 0.6);
+  color: var(--paper-3);
+  transition: border-color 0.2s var(--ease);
+}
+
+.vault-search:focus-within {
+  border-color: var(--brass);
+  color: var(--paper-2);
+}
+
+.vault-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: none;
+  color: var(--paper);
+  font: inherit;
+  font-size: 14px;
+}
+
+.vault-search input:focus {
+  outline: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.vault-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: rgba(243, 235, 221, 0.02);
+  transition: border-color 0.2s var(--ease);
+}
+
+.vault-item:hover {
+  border-color: rgba(217, 164, 65, 0.45);
+}
+
+.vault-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 100%;
+  padding: 0 6px 0 10px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.vault-open:focus-visible {
+  outline: 2px solid var(--brass-hi);
+  outline-offset: -2px;
+  border-radius: var(--radius-md);
+}
+
+/* Pop-up reader */
+dialog.viewer {
+  width: min(760px, calc(100% - 32px));
+  height: min(640px, calc(100dvh - 32px));
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, var(--ink-800), var(--ink-900));
+  color: var(--paper);
+  overflow: hidden;
+}
+
+.viewer-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.viewer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 12px 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.viewer-title {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 20px;
+}
+
+.viewer-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.viewer-text {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 18px 22px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--paper-2);
+}
+
+.viewer-image {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  object-fit: contain;
+  background: rgba(10, 18, 32, 0.6);
+}
+
+.viewer-frame {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.viewer-unlock {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  padding: 22px;
+  max-width: 420px;
+}
+
+.viewer-note {
+  margin: 0;
+  padding: 18px 22px 0;
+  color: var(--paper-3);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.viewer-unlock .viewer-note {
+  padding: 0;
+}
+
+.viewer-field {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--paper-2);
+}
+
+.viewer-field input {
+  height: 42px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line-strong);
+  background: rgba(10, 18, 32, 0.6);
+  color: var(--paper);
+  font: inherit;
+}
+
+.viewer-error {
+  margin: 0;
+  color: var(--oxblood);
+  font-size: 14px;
+}
+
+.viewer-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 22px;
+  border-top: 1px solid var(--line);
+}
+
+.viewer-body > .viewer-note {
+  padding-bottom: 0;
+}
+
+.vault-open .file-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.vault-open .file-name,
+.vault-open .file-meta {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* List password pop-up */
+dialog.gate {
+  width: min(440px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, var(--ink-800), var(--ink-900));
+  color: var(--paper);
+  overflow: auto;
+}
+
+.gate-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.gate-body {
+  display: grid;
+  gap: 16px;
+  padding: 18px 22px 22px;
+}
+
+.gate-body .viewer-note {
+  padding: 0;
+}
+
+.gate-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.gate-small {
+  font-size: 13px;
+}
+
+.link-btn {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--paper-3);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  color: var(--brass-hi);
+}

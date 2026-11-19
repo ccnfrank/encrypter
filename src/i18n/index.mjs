@@ -1,15 +1,17 @@
-// Interface languages. Keys live in en.mjs, de.mjs and pt.mjs.
+// Interface languages. Keys live in en.mjs, de.mjs, pt.mjs and es.mjs.
 import en from "./en.mjs";
 import de from "./de.mjs";
 import pt from "./pt.mjs";
+import es from "./es.mjs";
 
 export const LANGUAGES = [
   { code: "en", label: "EN", name: "English", locale: "en-US" },
   { code: "de", label: "DE", name: "Deutsch", locale: "de-DE" },
   { code: "pt", label: "PT", name: "Português", locale: "pt-BR" },
+  { code: "es", label: "ES", name: "Español", locale: "es-ES" },
 ];
 
-const DICTIONARIES = { en, de, pt };
+const DICTIONARIES = { en, de, pt, es };
 const STORAGE_KEY = "encrypter.lang";
 
 export const localeOf = (code) => LANGUAGES.find((lang) => lang.code === code)?.locale ?? "en-US";
@@ -45,7 +47,9 @@ export function makeT(code) {
   };
 }
 
-// Key for a count, e.g. "count.one" or "count.other", following the language's plural rules
-export function countKey(code, n) {
-  return `count.${new Intl.PluralRules(localeOf(code)).select(n)}`;
+// Key for a count, e.g. "<base>.one" or "<base>.other", following the language's plural rules
+export function pluralKey(code, base, n) {
+  return `${base}.${new Intl.PluralRules(localeOf(code)).select(n)}`;
 }
+
+export const countKey = (code, n) => pluralKey(code, "count", n);

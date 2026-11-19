@@ -9,13 +9,17 @@ import SubmitButton from "./components/SubmitButton.jsx";
 import HelpDialog from "./components/HelpDialog.jsx";
 import AboutDialog from "./components/AboutDialog.jsx";
 import Toast from "./components/Toast.jsx";
+import ProtectedList from "./components/ProtectedList.jsx";
+import ProtectedViewer from "./components/ProtectedViewer.jsx";
+import ListGate from "./components/ListGate.jsx";
+import { ArrowLeft, Eye } from "lucide-react";
 import { HelpGlyph, InfoGlyph, CheckGlyph } from "./components/icons.jsx";
 import { useProgress } from "./hooks/useProgress.js";
 import { useI18n } from "./i18n/LanguageProvider.jsx";
 import LanguageSwitch from "./components/LanguageSwitch.jsx";
 import { EncripterViz } from "./lib/viz.js";
 import { EncripterCore } from "./lib/crypto.js";
-import { CAN_OPEN_DIR, CAN_OPEN_FILES, FS_ACCESS } from "./lib/save.js";
+import { CAN_OPEN_DIR, CAN_OPEN_FILES, FS_ACCESS, ensureWritable } from "./lib/save.js";
 import {
   currentMode,
   entriesFromFileList,
@@ -26,16 +30,20 @@ import {
 import { matchHint, passwordScore, strengthHint, submitState } from "./lib/password.js";
 import { executeJob, finishJob, prepareJob } from "./lib/job.js";
 import { errorText } from "./lib/errors.js";
+import { lockInPlace } from "./lib/lock.js";
+import { canUseInPdf } from "./lib/pdf.js";
+import { pluralKey } from "./i18n/index.mjs";
 
 const idleText = (entries, decrypting, t) =>
   !entries.length ? t("idle.empty") : decrypting ? t("idle.decrypt") : t("idle.encrypt");
 
 export default function App() {
-  const { t, locale } = useI18n();
+  const { t, lang, locale } = useI18n();
   const [entries, setEntries] = useState([]);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [deleteOriginal, setDeleteOriginal] = useState(false);
+  const [lockMode, setLockMode] = useState(false); // only set a password, replace the files
   const [busy, setBusy] = useState(false);
   const [dragover, setDragover] = useState(false);
   const [note, setNote] = useState(null); // { text, tone } shown instead of the idle text
@@ -43,6 +51,15 @@ export default function App() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [done, setDone] = useState(false);
+  const [flipped, setFlipped] = useState(false); // drop area shows the protected files
+  const [viewing, setViewing] = useState(null); // protected file open in the viewer
+  const [gateOpen, setGateOpen] = useState(false); // password asked before showing the list
+
+  // Showing the list needs the list password; going back does not
+  const requestFlip = useCallback(() => {
+    if (flipped) setFlipped(false);
+    else setGateOpen(true);
+  }, [flipped]);
 
   const reduce = useReducedMotion();
   const vizCanvasRef = useRef(null);
@@ -67,6 +84,18 @@ export default function App() {
       return translate(`viz.${key}`, formatted);
     });
   }, []);
+
+  // Alt+F flips between the drop area and the protected files (not while a dialog is open)
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!e.altKey || e.code !== "KeyF" || e.ctrlKey || e.metaKey) return;
+      if (busyRef.current || viewing || helpOpen || aboutOpen || gateOpen) return;
+      e.preventDefault();
+      requestFlip();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [viewing, helpOpen, aboutOpen, gateOpen, requestFlip]);
 
   // Dropping outside the drop area must not make the browser open the file
   useEffect(() => {
@@ -190,6 +219,60 @@ export default function App() {
   const decrypting = mode === "decrypt";
   const state = submitState({ entries, mode, password, confirm, t });
 
+  // Protect in place: no .enc, the files keep their names
+  const lockAvailable = FS_ACCESS && entries.every((entry) => entry.handle);
+  const inPlace = lockMode && lockAvailable && !decrypting;
+  const commaBlocked = inPlace && !canUseInPdf(password);
+
+  const runInPlace = async () => {
+    // Asks for write permission first, straight from the click
+    try {
+      await ensureWritable(entries);
+    } catch (err) {
+      const message = errorText(err, t, "err.generic");
+      console.error(err);
+      setNote({ text: message, tone: "error" });
+      showToast(message, true);
+      return;
+    }
+
+    setBusy(true);
+    setDone(false);
+    setNote(null);
+    const run = progress.start();
+    vizRef.current?.start("encrypting");
+    try {
+      const { count, skipped } = await lockInPlace(entries, password, {
+        report: (f) => run.report(f),
+        setStatus: (key) => setNote({ text: t(key), tone: "" }),
+      });
+      await run.finish();
+      setDone(true);
+      const main =
+        count > 0 ? t("status.locked", { text: t(pluralKey(lang, "lock", count), { n: count }) }) : t("lock.nothing");
+      const skipText = skipped ? t(pluralKey(lang, "lock.skip", skipped), { n: skipped }) : "";
+      const message = [main, skipText].filter(Boolean).join(" ");
+      setNote({ text: message, tone: count > 0 ? "ok" : "" });
+      showToast(message);
+      if (count > 0) {
+        // The selection now points at the old contents, so clear it
+        setEntries([]);
+        setPassword("");
+        setConfirm("");
+      }
+    } catch (err) {
+      run.stop();
+      progress.reset();
+      const message = errorText(err, t, "err.encryptFailed");
+      console.error(err);
+      setNote({ text: message, tone: "error" });
+      showToast(message, true);
+    } finally {
+      vizRef.current?.stop();
+      setBusy(false);
+    }
+  };
+
   const runJob = async () => {
     // The save dialog must open straight from the click, so preparation comes first
     let plan;
@@ -251,14 +334,23 @@ export default function App() {
 
   const onSubmit = (e) => {
     e.preventDefault();
-    if (busy || !state.ok) return;
-    runJob();
+    if (busy || !state.ok || commaBlocked) return;
+    if (inPlace) runInPlace();
+    else runJob();
   };
 
   const statusText = note?.text ?? idleText(entries, decrypting, t);
   const statusTone = note?.tone ?? "";
-  const submitLabel = busy ? (decrypting ? t("label.decrypting") : t("label.encrypting")) : state.label;
+  const shownLabel = commaBlocked ? t("label.noComma") : inPlace && state.ok ? t("label.lock") : state.label;
+  const submitLabel = busy
+    ? inPlace
+      ? t("label.locking")
+      : decrypting
+        ? t("label.decrypting")
+        : t("label.encrypting")
+    : shownLabel;
   const deleteLabel = (decrypting ? t("delete.decrypt") : t("delete.encrypt")) + (FS_ACCESS ? "" : t("delete.unsupported"));
+  const lockLabel = t("lock.option") + (lockAvailable ? "" : t("lock.unsupported"));
 
   return (
     <MotionConfig reducedMotion="user">
@@ -277,21 +369,45 @@ export default function App() {
         </header>
 
         <main className="shell">
-          <DropZone
-            canvasRef={vizCanvasRef}
-            busy={busy}
-            dragover={dragover}
-            decrypting={decrypting}
-            done={done}
-            onActivate={openFiles}
-            onPickFile={openFiles}
-            onPickFolder={openFolder}
-            onDragState={setDragover}
-            onDrop={(dt) => {
-              setDragover(false);
-              if (!busy) handleDrop(dt);
-            }}
-          />
+          <div className="flip-stage">
+            <div className={`flip${flipped ? " is-flipped" : ""}`}>
+              <div className="flip-face flip-front" inert={flipped}>
+                <DropZone
+                  canvasRef={vizCanvasRef}
+                  busy={busy}
+                  dragover={dragover}
+                  decrypting={decrypting}
+                  done={done}
+                  onActivate={openFiles}
+                  onPickFile={openFiles}
+                  onPickFolder={openFolder}
+                  onDragState={setDragover}
+                  onDrop={(dt) => {
+                    setDragover(false);
+                    if (!busy) handleDrop(dt);
+                  }}
+                />
+              </div>
+              <div className="flip-face flip-back" inert={!flipped}>
+                <ProtectedList active={flipped} onOpen={setViewing} />
+              </div>
+            </div>
+            <button
+              type="button"
+              className="flip-btn"
+              aria-pressed={flipped}
+              aria-keyshortcuts="Alt+F"
+              title="Alt+F"
+              onClick={requestFlip}
+            >
+              {flipped ? (
+                <ArrowLeft size={15} strokeWidth={1.8} aria-hidden="true" />
+              ) : (
+                <Eye size={15} strokeWidth={1.8} aria-hidden="true" />
+              )}
+              {flipped ? t("flip.back") : t("flip.view")}
+            </button>
+          </div>
 
           <motion.form
             className="panel"
@@ -315,11 +431,24 @@ export default function App() {
               disabled={busy}
             />
 
-            <label className={`check${busy || !FS_ACCESS ? " is-disabled" : ""}`}>
+            <label className={`check${busy || !lockAvailable || decrypting ? " is-disabled" : ""}`}>
+              <input
+                type="checkbox"
+                checked={inPlace}
+                disabled={busy || !lockAvailable || decrypting}
+                onChange={(e) => setLockMode(e.target.checked)}
+              />
+              <span className="check-box" aria-hidden="true">
+                <CheckGlyph />
+              </span>
+              <span>{lockLabel}</span>
+            </label>
+
+            <label className={`check${busy || !FS_ACCESS || inPlace ? " is-disabled" : ""}`}>
               <input
                 type="checkbox"
                 checked={deleteOriginal}
-                disabled={busy || !FS_ACCESS}
+                disabled={busy || !FS_ACCESS || inPlace}
                 onChange={(e) => setDeleteOriginal(e.target.checked)}
               />
               <span className="check-box" aria-hidden="true">
@@ -331,7 +460,7 @@ export default function App() {
             <ProgressBar progress={progress} busy={busy} done={done} status={statusText} tone={statusTone} />
 
             <SubmitButton
-              disabled={busy || !state.ok}
+              disabled={busy || !state.ok || commaBlocked}
               busy={busy}
               done={done}
               decrypting={decrypting}
@@ -352,6 +481,15 @@ export default function App() {
         <Toast toast={toast} />
       </div>
 
+      <ProtectedViewer record={viewing} onClose={() => setViewing(null)} />
+      <ListGate
+        open={gateOpen}
+        onUnlock={() => {
+          setGateOpen(false);
+          setFlipped(true);
+        }}
+        onCancel={() => setGateOpen(false)}
+      />
       <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
       <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </MotionConfig>

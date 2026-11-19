@@ -23,7 +23,7 @@ npm run preview  # serve dist/ locally
 - `src/lib/crypto-core.js`: encryption format and primitives (`.enc` files)
 - `src/lib/files.js`, `save.js`, `job.js`, `progress.js`: naming, saving, deleting originals, progress timing
 - `src/lib/viz.js`: canvas animation shown while a job runs
-- `src/i18n/`: interface texts in English (`en.mjs`), German (`de.mjs`) and Portuguese (`pt.mjs`)
+- `src/i18n/`: interface texts in English (`en.mjs`), German (`de.mjs`), Portuguese (`pt.mjs`) and Spanish (`es.mjs`)
 - `tests/`: unit tests for the crypto core and the translations
 
 ## Adding a language

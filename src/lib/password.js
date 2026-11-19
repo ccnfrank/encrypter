@@ -29,7 +29,6 @@ export function matchHint(password, confirm, t) {
 export function submitState({ entries, mode, password, confirm, t }) {
   if (!entries.length) return { ok: false, label: t("label.chooseFile") };
   if (mode === "decrypt") {
-    if (entries.length > 1) return { ok: false, label: t("label.oneAtATime") };
     if (!password) return { ok: false, label: t("label.enterPassword") };
     return { ok: true, label: t("label.decrypt") };
   }

@@ -61,6 +61,7 @@ export default function HelpDialog({ open, onClose }) {
         <p className="help-note">
           {t("help.note")}
         </p>
+        <p className="help-note">{t("help.lock")}</p>
         <button type="button" className="ghost" autoFocus onClick={onClose}>
           {t("help.ok")}
         </button>

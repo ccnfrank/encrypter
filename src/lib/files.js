@@ -67,7 +67,7 @@ export function buildDecryptedName(raw) {
 
 async function collectHandle(handle, prefix, out) {
   if (handle.kind === "file") {
-    out.push({ path: prefix + handle.name, file: await handle.getFile() });
+    out.push({ path: prefix + handle.name, file: await handle.getFile(), handle });
     return;
   }
   for await (const child of handle.values()) {
