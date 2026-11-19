@@ -253,9 +253,6 @@
     DEFAULT_CHUNK_SIZE,
   };
 
-  if (typeof module !== "undefined" && module.exports) {
-    module.exports = api;
-  } else {
-    globalThis.EncripterCore = api;
-  }
+  // Plain script: exposed as a global, for the app and for the tests (vm.runInThisContext)
+  globalThis.EncripterCore = api;
 })();

@@ -4,7 +4,7 @@
  * Blocks of data scramble until they are "sealed" in order, a scan line sweeps
  * across, and a bar chart of entropy pulses along the bottom.
  */
-const EncripterViz = (() => {
+export const EncripterViz = (() => {
   "use strict";
 
   const HEX = "0123456789ABCDEF";
