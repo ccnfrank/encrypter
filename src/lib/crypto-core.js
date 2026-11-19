@@ -36,8 +36,8 @@
   const DEFAULT_CHUNK_SIZE = 1024 * 1024; // 1 MiB
   const ITERATIONS = 600000;
 
-  const invalid = () => new Error("Invalid or corrupted file.");
-  const wrongPassword = () => new Error("Wrong password or corrupted file.");
+  const invalid = () => Object.assign(new Error("Invalid or corrupted file."), { code: "invalid" });
+  const wrongPassword = () => Object.assign(new Error("Wrong password or corrupted file."), { code: "wrongPassword" });
 
   async function deriveKey(password, salt) {
     const material = await crypto.subtle.importKey(
@@ -153,7 +153,7 @@
       if (header[i] !== MAGIC[i]) throw invalid();
     }
     const version = header[4];
-    if (version !== VERSION && version !== LEGACY_VERSION) throw new Error("Unsupported file version.");
+    if (version !== VERSION && version !== LEGACY_VERSION) throw Object.assign(new Error("Unsupported file version."), { code: "version" });
 
     const salt = header.slice(5, 5 + SALT_LEN);
     const baseIv = header.slice(5 + SALT_LEN, 5 + SALT_LEN + IV_LEN);
@@ -253,9 +253,6 @@
     DEFAULT_CHUNK_SIZE,
   };
 
-  if (typeof module !== "undefined" && module.exports) {
-    module.exports = api;
-  } else {
-    globalThis.EncripterCore = api;
-  }
+  // Plain script: exposed as a global, for the app and for the tests (vm.runInThisContext)
+  globalThis.EncripterCore = api;
 })();

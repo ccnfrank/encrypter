@@ -4,7 +4,7 @@
  * Blocks of data scramble until they are "sealed" in order, a scan line sweeps
  * across, and a bar chart of entropy pulses along the bottom.
  */
-const EncripterViz = (() => {
+export const EncripterViz = (() => {
   "use strict";
 
   const HEX = "0123456789ABCDEF";
@@ -20,7 +20,8 @@ const EncripterViz = (() => {
 
   const randHex = () => HEX[(Math.random() * 16) | 0] + HEX[(Math.random() * 16) | 0];
 
-  function create(canvas) {
+  // text(key, vars) returns the translated label; keys: encrypting, decrypting, sealed, opened, blocks
+  function create(canvas, text = (key) => key) {
     const ctx = canvas.getContext("2d");
     let width = 0;
     let height = 0;
@@ -38,7 +39,7 @@ const EncripterViz = (() => {
     let frameId = 0;
     let startedAt = 0;
     let finished = false;
-    let mode = "Encrypting";
+    let mode = "encrypting";
 
     function resize() {
       const rect = canvas.getBoundingClientRect();
@@ -84,11 +85,11 @@ const EncripterViz = (() => {
       ctx.font = "500 12px 'Instrument Sans', system-ui, sans-serif";
       ctx.textAlign = "left";
       ctx.fillStyle = `rgba(${COLORS.paper}, 0.8)`;
-      const label = finished ? (mode === "Decrypting" ? "Opened" : "Sealed") : mode;
-      ctx.fillText(label, 16, 15);
+      const label = finished ? (mode === "decrypting" ? "opened" : "sealed") : mode;
+      ctx.fillText(text(label), 16, 15);
       ctx.textAlign = "right";
       ctx.fillStyle = `rgba(${COLORS.paper}, 0.55)`;
-      ctx.fillText(`${sealed.toLocaleString("en-US")} / ${total.toLocaleString("en-US")} blocks`, width - 16, 15);
+      ctx.fillText(text("blocks", { sealed, total }), width - 16, 15);
 
       // Scan line sweeping left to right
       const scanX = ((t * 0.45) % 1.4) * (width + 80) - 40;
@@ -154,7 +155,7 @@ const EncripterViz = (() => {
     }
 
     return {
-      start(label = "Encrypting") {
+      start(label = "encrypting") {
         resize();
         mode = label;
         progress = 0;

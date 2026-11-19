@@ -1,6 +1,12 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { encryptBlob, decryptBlob, decryptFile, readName, isEncryptedBlob, HEADER_LEN } = require("../crypto-core.js");
+const fs = require("node:fs");
+const path = require("node:path");
+const vm = require("node:vm");
+
+// crypto-core.js is a browser script: run it and take the global it exposes
+vm.runInThisContext(fs.readFileSync(path.join(__dirname, "..", "src", "lib", "crypto-core.js"), "utf8"));
+const { encryptBlob, decryptBlob, decryptFile, readName, isEncryptedBlob, HEADER_LEN } = globalThis.EncripterCore;
 
 // name length field (4) + name block tag (16) when the name is empty
 const NAME_BLOCK_EMPTY = 4 + 16;

@@ -1,0 +1,24 @@
+{
+  "name": "encrypter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Encrypt and decrypt files and folders with a password, in the browser.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test tests/"
+  },
+  "dependencies": {
+    "jszip": "3.10.1",
+    "lucide-react": "1.76.0",
+    "motion": "14.14.0",
+    "mupdf": "1.28.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "6.3.0",
+    "vite": "8.3.8"
+  }
+}
