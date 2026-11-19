@@ -1,11 +1,13 @@
 import { AnimatePresence, motion } from "motion/react";
 import { File, Folder, X } from "lucide-react";
 import { entryMeta } from "../lib/files.js";
+import { useI18n } from "../i18n/LanguageProvider.jsx";
 
 export default function SelectionList({ entries, onRemove, busy }) {
+  const { t, lang, locale } = useI18n();
   return (
     <div className="picked">
-      <ul className="picked-list" aria-label="Selected files and folders" hidden={!entries.length}>
+      <ul className="picked-list" aria-label={t("aria.selected")} hidden={!entries.length}>
         <AnimatePresence initial={false}>
           {entries.map((entry) => (
             <motion.li
@@ -22,12 +24,12 @@ export default function SelectionList({ entries, onRemove, busy }) {
               </div>
               <div className="file-info">
                 <p className="file-name">{entry.name}</p>
-                <p className="file-meta">{entryMeta(entry)}</p>
+                <p className="file-meta">{entryMeta(entry, t, lang, locale)}</p>
               </div>
               <button
                 type="button"
                 className="remove-btn"
-                aria-label={`Remove ${entry.name}`}
+                aria-label={t("aria.remove", { name: entry.name })}
                 disabled={busy}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -40,7 +42,7 @@ export default function SelectionList({ entries, onRemove, busy }) {
           ))}
         </AnimatePresence>
       </ul>
-      {!entries.length && <p className="picked-empty">Nothing selected yet.</p>}
+      {!entries.length && <p className="picked-empty">{t("list.empty")}</p>}
     </div>
   );
 }

@@ -14,9 +14,8 @@ import {
   allItems,
 } from "./files.js";
 import { ZIP_SHARE } from "./progress.js";
+import { coded } from "./errors.js";
 import { FS_ACCESS, downloadBlob, ensureWritable, pickSaveTarget, removeOriginals } from "./save.js";
-
-export class JobError extends Error {}
 
 export async function prepareJob({ entries, password, deleteOriginal }) {
   const decrypting = currentMode(entries) === "decrypt";
@@ -41,7 +40,7 @@ export async function prepareJob({ entries, password, deleteOriginal }) {
       target = await pickSaveTarget(outName, first.handle || undefined, decrypting);
     } catch (err) {
       if (err.name === "AbortError") return { cancelled: true };
-      throw new JobError("Could not open the save dialog.");
+      throw coded("saveDialog");
     }
   }
 
@@ -53,7 +52,7 @@ export async function executeJob(plan, { report, setStatus }) {
   const first = entries[0];
 
   if (decrypting) {
-    setStatus("Decrypting…");
+    setStatus("status.decrypting");
     return EncripterCore.decryptBlob(first.items[0].file, password, {
       onProgress: (f) => report(f),
     });
@@ -63,7 +62,7 @@ export async function executeJob(plan, { report, setStatus }) {
   let start = 0;
   let span = 1;
   if (zipped) {
-    setStatus("Zipping…");
+    setStatus("status.zipping");
     source = await zipItems(allItems(entries), (f) => report(f * ZIP_SHARE));
     start = ZIP_SHARE;
     span = 1 - ZIP_SHARE;
@@ -71,7 +70,7 @@ export async function executeJob(plan, { report, setStatus }) {
     source = first.items[0].file;
   }
 
-  setStatus("Encrypting…");
+  setStatus("status.encrypting");
   return EncripterCore.encryptBlob(source, password, {
     name: originalName(first.name, zipped),
     onProgress: (f) => report(start + f * span),
@@ -82,7 +81,7 @@ export async function executeJob(plan, { report, setStatus }) {
 export async function finishJob(plan, result, { setStatus }) {
   const { target, outName, deleting, entries } = plan;
 
-  setStatus("Saving…");
+  setStatus("status.saving");
   if (target) {
     const writable = await target.createWritable();
     await writable.write(result);

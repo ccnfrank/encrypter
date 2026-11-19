@@ -11,6 +11,8 @@ import AboutDialog from "./components/AboutDialog.jsx";
 import Toast from "./components/Toast.jsx";
 import { HelpGlyph, InfoGlyph, CheckGlyph } from "./components/icons.jsx";
 import { useProgress } from "./hooks/useProgress.js";
+import { useI18n } from "./i18n/LanguageProvider.jsx";
+import LanguageSwitch from "./components/LanguageSwitch.jsx";
 import { EncripterViz } from "./lib/viz.js";
 import { EncripterCore } from "./lib/crypto.js";
 import { CAN_OPEN_DIR, CAN_OPEN_FILES, FS_ACCESS } from "./lib/save.js";
@@ -23,15 +25,13 @@ import {
 } from "./lib/files.js";
 import { matchHint, passwordScore, strengthHint, submitState } from "./lib/password.js";
 import { executeJob, finishJob, prepareJob } from "./lib/job.js";
+import { errorText } from "./lib/errors.js";
 
-const idleText = (entries, decrypting) =>
-  !entries.length
-    ? "Waiting for a file"
-    : decrypting
-      ? "Enter the password to decrypt"
-      : "Set a password to continue";
+const idleText = (entries, decrypting, t) =>
+  !entries.length ? t("idle.empty") : decrypting ? t("idle.decrypt") : t("idle.encrypt");
 
 export default function App() {
+  const { t, locale } = useI18n();
   const [entries, setEntries] = useState([]);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -51,11 +51,21 @@ export default function App() {
   const folderInput = useRef(null);
   const busyRef = useRef(false);
   busyRef.current = busy;
+  // The canvas draws its labels every frame, so it reads the latest language through a ref
+  const i18nRef = useRef({ t, locale });
+  i18nRef.current = { t, locale };
   const progress = useProgress();
 
   // Canvas visualization: created once, drawn while a job runs
   useEffect(() => {
-    vizRef.current = EncripterViz.create(vizCanvasRef.current);
+    vizRef.current = EncripterViz.create(vizCanvasRef.current, (key, vars = {}) => {
+      const { t: translate, locale: loc } = i18nRef.current;
+      const formatted = {};
+      for (const [name, value] of Object.entries(vars)) {
+        formatted[name] = typeof value === "number" ? value.toLocaleString(loc) : value;
+      }
+      return translate(`viz.${key}`, formatted);
+    });
   }, []);
 
   // Dropping outside the drop area must not make the browser open the file
@@ -87,7 +97,7 @@ export default function App() {
     async (added) => {
       const withContent = added.filter((entry) => entry.items.length > 0);
       if (!withContent.length) {
-        showToast("Nothing to encrypt. The folder is empty.", true);
+        showToast(t("toast.empty"), true);
         return;
       }
       await Promise.all(withContent.map((entry) => markEncrypted(entry, EncripterCore.isEncryptedBlob)));
@@ -95,7 +105,7 @@ export default function App() {
       setNote(null);
       setDone(false);
     },
-    [showToast]
+    [showToast, t]
   );
 
   const removeEntry = (id) => {
@@ -114,7 +124,7 @@ export default function App() {
       const handles = await window.showOpenFilePicker({ multiple: true });
       await addEntries(await Promise.all(handles.map(entryFromHandle)));
     } catch (err) {
-      if (err.name !== "AbortError") reportError(err, "Could not read the selected files.");
+      if (err.name !== "AbortError") reportError(err, t("err.readFiles"));
     }
   };
 
@@ -128,7 +138,7 @@ export default function App() {
       const dir = await window.showDirectoryPicker({ mode: "read" });
       await addEntries([await entryFromHandle(dir)]);
     } catch (err) {
-      if (err.name !== "AbortError") reportError(err, "Could not read the selected folder.");
+      if (err.name !== "AbortError") reportError(err, t("err.readFolder"));
     }
   };
 
@@ -142,7 +152,7 @@ export default function App() {
       : items.map((item) => (item.webkitGetAsEntry ? item.webkitGetAsEntry() : null)).filter(Boolean);
     const files = dataTransfer.files;
 
-    setNote({ text: "Reading items…", tone: "" });
+    setNote({ text: t("status.reading"), tone: "" });
     readDropped(handlePromises, legacyEntries, files);
   };
 
@@ -164,7 +174,7 @@ export default function App() {
       }
       await addEntries(added);
     } catch (err) {
-      reportError(err, "Could not read the dropped items.");
+      reportError(err, t("err.readDropped"));
       setNote(null);
     }
   };
@@ -178,7 +188,7 @@ export default function App() {
 
   const mode = currentMode(entries);
   const decrypting = mode === "decrypt";
-  const state = submitState({ entries, mode, password, confirm });
+  const state = submitState({ entries, mode, password, confirm, t });
 
   const runJob = async () => {
     // The save dialog must open straight from the click, so preparation comes first
@@ -186,14 +196,14 @@ export default function App() {
     try {
       plan = await prepareJob({ entries, password, deleteOriginal });
     } catch (err) {
-      const message = err.message || "Something went wrong.";
+      const message = errorText(err, t, "err.generic");
       console.error(err);
       setNote({ text: message, tone: "error" });
       showToast(message, true);
       return;
     }
     if (plan.cancelled) {
-      setNote({ text: "Cancelled. Nothing was saved.", tone: "" });
+      setNote({ text: t("status.cancelled"), tone: "" });
       return;
     }
 
@@ -201,8 +211,8 @@ export default function App() {
     setDone(false);
     setNote(null);
     const run = progress.start();
-    vizRef.current?.start(plan.decrypting ? "Decrypting" : "Encrypting");
-    const setText = (text) => setNote({ text, tone: "" });
+    vizRef.current?.start(plan.decrypting ? "decrypting" : "encrypting");
+    const setText = (key) => setNote({ text: t(key), tone: "" });
 
     try {
       const result = await executeJob(plan, { report: (f) => run.report(f), setStatus: setText });
@@ -210,14 +220,18 @@ export default function App() {
       await run.finish();
       setDone(true);
 
-      const note = outcome.deleted ? ". Original deleted" : "";
+      const deletedNote = outcome.deleted ? t("status.deleted") : "";
       if (outcome.deleted) setEntries([]);
-      if (outcome.deleteFailed) showToast("Saved, but the original could not be deleted.", true);
+      if (outcome.deleteFailed) showToast(t("toast.deleteFailed"), true);
       setNote({
-        text: outcome.saved ? `Done. Saved as ${outcome.savedAs}${note}` : `Done. Downloaded ${outcome.savedAs}`,
+        text: outcome.saved
+          ? t("status.done", { name: outcome.savedAs }) + deletedNote
+          : t("status.downloaded", { name: outcome.savedAs }),
         tone: "ok",
       });
-      showToast(outcome.saved ? `Saved as ${outcome.savedAs}${note}` : `Downloaded ${outcome.savedAs}`);
+      showToast(
+        outcome.saved ? t("toast.saved", { name: outcome.savedAs }) + deletedNote : t("toast.downloaded", { name: outcome.savedAs })
+      );
 
       // Clear the passwords from the screen as soon as the file is saved
       setPassword("");
@@ -225,7 +239,7 @@ export default function App() {
     } catch (err) {
       run.stop();
       progress.reset();
-      const message = plan.decrypting ? err.message || "Decryption failed." : "Encryption failed.";
+      const message = plan.decrypting ? errorText(err, t, "err.decryptFailed") : t("err.encryptFailed");
       console.error(err);
       setNote({ text: message, tone: "error" });
       showToast(message, true);
@@ -241,12 +255,10 @@ export default function App() {
     runJob();
   };
 
-  const statusText = note?.text ?? idleText(entries, decrypting);
+  const statusText = note?.text ?? idleText(entries, decrypting, t);
   const statusTone = note?.tone ?? "";
-  const submitLabel = busy ? (decrypting ? "Decrypting…" : "Encrypting…") : state.label;
-  const deleteLabel =
-    (decrypting ? "Delete the original file after decrypting" : "Delete the original file after encrypting") +
-    (FS_ACCESS ? "" : " (Chrome and Edge only)");
+  const submitLabel = busy ? (decrypting ? t("label.decrypting") : t("label.encrypting")) : state.label;
+  const deleteLabel = (decrypting ? t("delete.decrypt") : t("delete.encrypt")) + (FS_ACCESS ? "" : t("delete.unsupported"));
 
   return (
     <MotionConfig reducedMotion="user">
@@ -254,10 +266,11 @@ export default function App() {
         <header className="topbar">
           <Brand />
           <div className="top-actions">
-            <button type="button" className="icon-btn" aria-label="How to use Encrypter" onClick={() => setHelpOpen(true)}>
+            <LanguageSwitch />
+            <button type="button" className="icon-btn" aria-label={t("aria.help")} onClick={() => setHelpOpen(true)}>
               <HelpGlyph />
             </button>
-            <button type="button" className="icon-btn" aria-label="About Encrypter" onClick={() => setAboutOpen(true)}>
+            <button type="button" className="icon-btn" aria-label={t("aria.about")} onClick={() => setAboutOpen(true)}>
               <InfoGlyph />
             </button>
           </div>
@@ -296,9 +309,9 @@ export default function App() {
               confirm={confirm}
               onPassword={setPassword}
               onConfirm={setConfirm}
-              strength={strengthHint(password)}
+              strength={strengthHint(password, t, locale)}
               strengthLevel={passwordScore(password)}
-              match={matchHint(password, confirm)}
+              match={matchHint(password, confirm, t)}
               disabled={busy}
             />
 

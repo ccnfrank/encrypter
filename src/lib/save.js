@@ -1,3 +1,5 @@
+import { coded } from "./errors.js";
+
 // Where results go. The File System Access API (Chromium) lets the save dialog start
 // in the original folder and lets originals be deleted. Elsewhere, results download.
 
@@ -39,10 +41,10 @@ export function downloadBlob(blob, filename) {
 export async function ensureWritable(entries) {
   const mode = { mode: "readwrite" };
   for (const entry of entries) {
-    if (!entry.handle) throw new Error("This item can't be deleted from the browser.");
+    if (!entry.handle) throw coded("noDelete");
     if ((await entry.handle.queryPermission(mode)) === "granted") continue;
     if ((await entry.handle.requestPermission(mode)) !== "granted") {
-      throw new Error("Permission to delete the original was not granted.");
+      throw coded("permission");
     }
   }
 }

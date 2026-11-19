@@ -23,7 +23,14 @@ npm run preview  # serve dist/ locally
 - `src/lib/crypto-core.js`: encryption format and primitives (`.enc` files)
 - `src/lib/files.js`, `save.js`, `job.js`, `progress.js`: naming, saving, deleting originals, progress timing
 - `src/lib/viz.js`: canvas animation shown while a job runs
-- `tests/`: unit tests for the crypto core
+- `src/i18n/`: interface texts in English (`en.mjs`), German (`de.mjs`) and Portuguese (`pt.mjs`)
+- `tests/`: unit tests for the crypto core and the translations
+
+## Adding a language
+
+Copy `src/i18n/en.mjs` to a new file with the language code, translate every value (keep the `{name}` placeholders),
+then add the language to `LANGUAGES` and `DICTIONARIES` in `src/i18n/index.mjs`. `npm test` checks that the keys match.
+The choice is saved in the browser; without one, the browser language is used when it is supported.
 
 ## Browser support
 

@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 import { motion, useTransform } from "motion/react";
+import { useI18n } from "../i18n/LanguageProvider.jsx";
 
 export default function ProgressBar({ progress, busy, done, status, tone }) {
+  const { t } = useI18n();
   const barRef = useRef(null);
   const head = useTransform(progress.value, (v) => `${v * 100}%`);
 
@@ -26,7 +28,7 @@ export default function ProgressBar({ progress, busy, done, status, tone }) {
         ref={barRef}
         className={`bar${busy ? " is-working" : ""}${done ? " is-done" : ""}`}
         role="progressbar"
-        aria-label="Encryption progress"
+        aria-label={t("aria.progress")}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={0}

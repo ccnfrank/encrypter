@@ -1,11 +1,13 @@
 // Collecting, naming and zipping the items the user picks or drops.
 // Each entry: { id, name, kind: 'file' | 'folder', items: [{ path, file }], size, handle, encrypted }
 
+import { countKey } from "../i18n/index.mjs";
+
 let nextId = 1;
 
 export const MIN_LENGTH = 8;
 
-export function formatBytes(bytes) {
+export function formatBytes(bytes, locale) {
   if (bytes < 1024) return `${bytes} B`;
   const units = ["KB", "MB", "GB", "TB"];
   let value = bytes / 1024;
@@ -14,10 +16,9 @@ export function formatBytes(bytes) {
     value /= 1024;
     i += 1;
   }
-  return `${value.toFixed(value < 10 ? 1 : 0)} ${units[i]}`;
+  const digits = value < 10 ? 1 : 0;
+  return `${value.toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits })} ${units[i]}`;
 }
-
-export const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
 const totalSize = (items) => items.reduce((sum, item) => sum + item.file.size, 0);
 
@@ -150,11 +151,14 @@ export async function markEncrypted(entry, isEncryptedBlob) {
   return entry;
 }
 
-export function entryMeta(entry) {
+// t and lang come from the i18n layer; the count uses the language's plural rules
+export function entryMeta(entry, t, lang, locale) {
+  const size = formatBytes(entry.size, locale);
   if (entry.kind === "file") {
-    return `${entry.encrypted ? "Encrypted file" : "File"} · ${formatBytes(entry.size)}`;
+    return t("meta.file", { kind: t(entry.encrypted ? "kind.encrypted" : "kind.file"), size });
   }
-  return `Folder · ${plural(entry.items.length, "file", "files")} · ${formatBytes(entry.size)}`;
+  const count = t(countKey(lang, entry.items.length), { n: entry.items.length.toLocaleString(locale) });
+  return t("meta.folder", { kind: t("kind.folder"), count, size });
 }
 
 /* ---------- zipping ---------- */

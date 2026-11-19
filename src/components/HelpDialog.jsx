@@ -1,7 +1,15 @@
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
+import { useI18n } from "../i18n/LanguageProvider.jsx";
+import { MIN_LENGTH } from "../lib/files.js";
+
+// Splits a translated sentence around a placeholder so the placeholder can be rendered as <code>
+function withCode(text, placeholder, code) {
+  return text.split(placeholder).flatMap((part, i) => (i === 0 ? [part] : [<code key={i}>{code}</code>, part]));
+}
 
 export default function HelpDialog({ open, onClose }) {
+  const { t } = useI18n();
   const ref = useRef(null);
 
   useEffect(() => {
@@ -22,42 +30,39 @@ export default function HelpDialog({ open, onClose }) {
       }}
     >
       <div className="help-card">
-        <button type="button" className="dialog-x" aria-label="Close" onClick={onClose}>
+        <button type="button" className="dialog-x" aria-label={t("common.close")} onClick={onClose}>
           <X size={16} strokeWidth={2} aria-hidden="true" />
         </button>
         <h2 className="help-title" id="helpTitle">
-          How to use encrypter.app
+          {t("help.title", { app: "encrypter.app" })}
         </h2>
         <ol className="help-steps">
           <li>
-            <strong>Add your files</strong>
-            <span>Drop files or folders in the area above, or use Choose files / Choose folder. Folders and multiple items are zipped first.</span>
+            <strong>{t("help.s1.title")}</strong>
+            <span>{t("help.s1.body")}</span>
           </li>
           <li>
-            <strong>Let the app pick the action</strong>
-            <span>Files that are not encrypted yet get encrypted. Files already encrypted with Encrypter get decrypted.</span>
+            <strong>{t("help.s2.title")}</strong>
+            <span>{t("help.s2.body")}</span>
           </li>
           <li>
-            <strong>Set a password</strong>
-            <span>Use at least 8 characters and type it twice. Without it, the file cannot be opened again.</span>
+            <strong>{t("help.s3.title")}</strong>
+            <span>{t("help.s3.body", { min: MIN_LENGTH })}</span>
           </li>
           <li>
-            <strong>Optional: delete the original</strong>
-            <span>Check the box to remove the original after encrypting. Deleted files are not sent to the Trash.</span>
+            <strong>{t("help.s4.title")}</strong>
+            <span>{t("help.s4.body")}</span>
           </li>
           <li>
-            <strong>Choose where to save</strong>
-            <span>
-              Click the button and pick the name and folder. Encrypted files keep the original name with <code>.enc</code> added.
-              Decrypted files get their original name and extension back.
-            </span>
+            <strong>{t("help.s5.title")}</strong>
+            <span>{withCode(t("help.s5.body"), "{enc}", ".enc")}</span>
           </li>
         </ol>
         <p className="help-note">
-          Saving to a chosen folder and deleting originals work in Chrome and Edge. In other browsers, the file is downloaded and the delete option is turned off.
+          {t("help.note")}
         </p>
         <button type="button" className="ghost" autoFocus onClick={onClose}>
-          Got it
+          {t("help.ok")}
         </button>
       </div>
     </dialog>

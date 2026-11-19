@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { FilePlus2, FolderOpen } from "lucide-react";
 import Seal from "./Seal.jsx";
+import { useI18n } from "../i18n/LanguageProvider.jsx";
 
 export default function DropZone({
   canvasRef,
@@ -14,6 +15,7 @@ export default function DropZone({
   onDragState,
   onDrop,
 }) {
+  const { t } = useI18n();
   const depth = useRef(0);
 
   const onEnter = (e) => {
@@ -34,7 +36,7 @@ export default function DropZone({
   return (
     <section
       className={`drop${busy ? " is-busy" : ""}${dragover ? " is-dragover" : ""}`}
-      aria-label="Drop area for files or folders"
+      aria-label={t("aria.drop")}
       onClick={() => {
         if (!busy) onActivate();
       }}
@@ -48,8 +50,8 @@ export default function DropZone({
       <canvas className="viz" ref={canvasRef} aria-hidden="true" />
 
       <div className="drop-copy">
-        <h1>Drag your files here</h1>
-        <p>Encrypt and Decrypt files and folders.</p>
+        <h1>{t("drop.title")}</h1>
+        <p>{t("drop.subtitle")}</p>
         <div className="drop-actions">
           <button
             type="button"
@@ -61,7 +63,7 @@ export default function DropZone({
             }}
           >
             <FilePlus2 size={16} strokeWidth={1.8} aria-hidden="true" />
-            Choose files
+            {t("drop.chooseFiles")}
           </button>
           <button
             type="button"
@@ -73,7 +75,7 @@ export default function DropZone({
             }}
           >
             <FolderOpen size={16} strokeWidth={1.8} aria-hidden="true" />
-            Choose folder
+            {t("drop.chooseFolder")}
           </button>
         </div>
       </div>
