@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "fraunces",
+        "createdAt": "2026-11-19T09:23:26.047Z",
+        "reason": "Deliberate typeface from the approved design plan (Fraunces display + Instrument Sans UI); not a generic default choice"
+      },
+      {
+        "rule": "overused-font",
+        "value": "instrument sans",
+        "createdAt": "2026-11-19T09:23:26.066Z",
+        "reason": "Deliberate UI typeface from the approved design plan, paired with Fraunces; not a generic default choice"
+      },
+      {
+        "rule": "overused-font",
+        "value": "instrument serif",
+        "createdAt": "2026-11-19T09:39:41.200Z",
+        "reason": "Deliberate display face for the drop-zone title, chosen to meet the request in corre.png to change the title font and size; not a generic default"
+      }
+    ]
+  }
+}
