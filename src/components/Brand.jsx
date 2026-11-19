@@ -5,7 +5,7 @@ export default function Brand() {
     <a className="brand" href="./">
       <BrandMark />
       <span>
-        encryter<span className="brand-tld">.app</span>
+        encrypter<span className="brand-tld">.app</span>
       </span>
     </a>
   );

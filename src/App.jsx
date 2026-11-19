@@ -254,10 +254,10 @@ export default function App() {
         <header className="topbar">
           <Brand />
           <div className="top-actions">
-            <button type="button" className="icon-btn" aria-label="How to use Encryter" onClick={() => setHelpOpen(true)}>
+            <button type="button" className="icon-btn" aria-label="How to use Encrypter" onClick={() => setHelpOpen(true)}>
               <HelpGlyph />
             </button>
-            <button type="button" className="icon-btn" aria-label="About Encryter" onClick={() => setAboutOpen(true)}>
+            <button type="button" className="icon-btn" aria-label="About Encrypter" onClick={() => setAboutOpen(true)}>
               <InfoGlyph />
             </button>
           </div>

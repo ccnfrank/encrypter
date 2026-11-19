@@ -1,4 +1,4 @@
-# encryter.app
+# encrypter.app
 
 Encrypt and decrypt files and folders with a password, right in the browser.
 Nothing is uploaded: the file is processed on your computer.

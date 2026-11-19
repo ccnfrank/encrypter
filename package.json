@@ -1,5 +1,5 @@
 {
-  "name": "encryter",
+  "name": "encrypter",
   "version": "1.0.0",
   "private": true,
   "description": "Encrypt and decrypt files and folders with a password, in the browser.",

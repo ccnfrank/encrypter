@@ -28,7 +28,7 @@ export default function AboutDialog({ open, onClose }) {
           <X size={16} strokeWidth={2} aria-hidden="true" />
         </button>
         <p className="about-name" id="aboutTitle">
-          encryter<span className="brand-tld">.app</span>
+          encrypter<span className="brand-tld">.app</span>
         </p>
         <p className="about-version">
           Version <span>{pkg.version}</span>

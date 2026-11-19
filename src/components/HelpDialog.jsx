@@ -26,7 +26,7 @@ export default function HelpDialog({ open, onClose }) {
           <X size={16} strokeWidth={2} aria-hidden="true" />
         </button>
         <h2 className="help-title" id="helpTitle">
-          How to use encryter.app
+          How to use encrypter.app
         </h2>
         <ol className="help-steps">
           <li>
@@ -35,7 +35,7 @@ export default function HelpDialog({ open, onClose }) {
           </li>
           <li>
             <strong>Let the app pick the action</strong>
-            <span>Files that are not encrypted yet get encrypted. Files already encrypted with Encryter get decrypted.</span>
+            <span>Files that are not encrypted yet get encrypted. Files already encrypted with Encrypter get decrypted.</span>
           </li>
           <li>
             <strong>Set a password</strong>
