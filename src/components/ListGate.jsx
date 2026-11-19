@@ -7,6 +7,7 @@ import {
   setListPassword,
 } from "../lib/listGate.js";
 import { useI18n } from "../i18n/LanguageProvider.jsx";
+import { errorText } from "../lib/errors.js";
 
 // Asks for the list password before the protected files are shown.
 // First time: creates the password (asks twice).
@@ -46,6 +47,9 @@ export default function ListGate({ open, onUnlock, onCancel }) {
       try {
         await setListPassword(password);
         onUnlock();
+      } catch (err) {
+        console.error(err);
+        setError(errorText(err, t, "err.generic"));
       } finally {
         setBusy(false);
       }
@@ -55,6 +59,9 @@ export default function ListGate({ open, onUnlock, onCancel }) {
     try {
       if (await checkListPassword(password)) onUnlock();
       else setError(t("gate.wrong"));
+    } catch (err) {
+      console.error(err);
+      setError(errorText(err, t, "err.generic"));
     } finally {
       setBusy(false);
     }

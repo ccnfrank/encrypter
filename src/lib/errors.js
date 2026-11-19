@@ -6,7 +6,13 @@ export function coded(code, message = code) {
   return err;
 }
 
+// Browser errors (DOMException) have numeric codes, e.g. 18 = SecurityError. Only our own
+// text codes have a translation, so anything else shows the browser's message.
 export function errorText(err, t, fallbackKey) {
-  if (err?.code) return t(`err.${err.code}`);
+  const key = typeof err?.code === "string" ? `err.${err.code}` : null;
+  if (key) {
+    const text = t(key);
+    if (text !== key) return text;
+  }
   return err?.message || t(fallbackKey);
 }
